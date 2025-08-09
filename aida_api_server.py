@@ -1107,6 +1107,45 @@ def admin_change_password():
         flask_logger.error(f"Admin password change error: {e}")
         return jsonify({"error": "Password change failed"}), 500
 
+@app.route('/admin/change_user_password', methods=['POST'])
+def admin_change_user_password():
+    """Change user password (admin only)"""
+    try:
+        # Check admin authentication
+        session_id = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not session_id:
+            return jsonify({"error": "No session provided"}), 401
+        
+        admin_session = auth_manager.get_admin_session(session_id)
+        if not admin_session:
+            return jsonify({"error": "Invalid or expired session"}), 401
+        
+        # Update session activity
+        auth_manager.update_session_activity(session_id)
+        
+        data = request.get_json()
+        user_id = data.get('user_id')
+        new_password = data.get('new_password')
+        
+        if not user_id or not new_password:
+            return jsonify({"error": "User ID and new password are required"}), 400
+        
+        # Validate password strength
+        if len(new_password) < 6:
+            return jsonify({"error": "Password must be at least 6 characters long"}), 400
+        
+        success = auth_manager.update_user_password(user_id, new_password)
+        if success:
+            return jsonify({
+                "success": True,
+                "message": "Password changed successfully"
+            }), 200
+        else:
+            return jsonify({"error": "Failed to change password"}), 500
+    except Exception as e:
+        flask_logger.error(f"Change user password error: {e}")
+        return jsonify({"error": "Failed to change password"}), 500
+
 @app.route('/admin/stats', methods=['GET'])
 def admin_stats():
     """Get platform statistics (admin only)"""
@@ -1175,10 +1214,17 @@ def admin_create_user():
         if not username or not email:
             return jsonify({"error": "Username and email are required"}), 400
         
-        success, user_id, message = auth_manager.create_user(username, email, role)
+        success, password, message = auth_manager.create_user(username, email, role)
         
         if success:
-            return jsonify({"success": True, "user_id": user_id, "message": message}), 201
+            return jsonify({
+                "success": True, 
+                "message": message,
+                "password": password,
+                "username": username,
+                "email": email,
+                "role": role
+            }), 201
         else:
             return jsonify({"error": message}), 400
     except Exception as e:

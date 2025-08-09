@@ -68,6 +68,68 @@ class AdminPanel {
             e.preventDefault();
             this.handlePasswordChange();
         });
+        
+        // Change user password form
+        document.getElementById('changeUserPasswordForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('changePasswordUserId').value;
+            this.handleChangeUserPassword(userId);
+        });
+    }
+    
+    showChangePasswordModal(userId, username) {
+        document.getElementById('changePasswordUserId').value = userId;
+        document.getElementById('changePasswordModal').style.display = 'block';
+        document.getElementById('changePasswordModal').querySelector('h3').textContent = `Change Password for ${username}`;
+    }
+    
+    closeChangePasswordModal() {
+        document.getElementById('changePasswordModal').style.display = 'none';
+        document.getElementById('changeUserPasswordForm').reset();
+        document.getElementById('changeUserPasswordMessage').textContent = '';
+    }
+    
+    handlePasswordChange() {
+        const formData = new FormData(document.getElementById('passwordChangeForm'));
+        const currentPassword = formData.get('currentPassword');
+        const newPassword = formData.get('newPassword');
+        const confirmPassword = formData.get('confirmPassword');
+        
+        if (newPassword !== confirmPassword) {
+            this.showMessage('passwordChangeMessage', 'New passwords do not match', 'error');
+            return;
+        }
+        
+        // Handle admin password change (existing functionality)
+        this.changeAdminPassword(currentPassword, newPassword);
+    }
+    
+    async changeAdminPassword(currentPassword, newPassword) {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/admin/change_password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.adminSessionId}`
+                },
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.showMessage('passwordChangeMessage', data.message, 'success');
+                document.getElementById('passwordChangeForm').reset();
+            } else {
+                this.showMessage('passwordChangeMessage', data.error, 'error');
+            }
+        } catch (error) {
+            console.error('Failed to change password:', error);
+            this.showMessage('passwordChangeMessage', 'Failed to change password', 'error');
+        }
     }
     
     async handleLogout() {
@@ -169,6 +231,9 @@ class AdminPanel {
                                     `<button class="btn btn-danger btn-sm" onclick="adminPanel.deactivateUser('${user.user_id}')">Deactivate</button>` :
                                     `<button class="btn btn-success btn-sm" onclick="adminPanel.activateUser('${user.user_id}')">Activate</button>`
                                 }
+                                <button class="change-password-btn" onclick="adminPanel.showChangePasswordModal('${user.user_id}', '${user.username}')">
+                                    <i class="fas fa-key"></i> Change Password
+                                </button>
                             </td>
                         </tr>
                     `).join('')}
@@ -200,7 +265,8 @@ class AdminPanel {
             const data = await response.json();
             
             if (response.ok) {
-                this.showMessage('createUserMessage', data.message, 'success');
+                // Display the generated password in a modal
+                this.showPasswordModal(data);
                 document.getElementById('createUserForm').reset();
                 this.loadUsers();
                 this.loadStats();
@@ -213,26 +279,54 @@ class AdminPanel {
         }
     }
     
-    async handlePasswordChange() {
-        const formData = new FormData(document.getElementById('passwordChangeForm'));
-        const currentPassword = formData.get('currentPassword');
-        const newPassword = formData.get('newPassword');
-        const confirmPassword = formData.get('confirmPassword');
+    showPasswordModal(data) {
+        const modal = document.getElementById('passwordModal');
+        const content = document.getElementById('passwordModalContent');
+        
+        content.innerHTML = `
+            <div class="password-display">
+                <p><strong>Username:</strong> ${data.username}</p>
+                <p><strong>Email:</strong> ${data.email}</p>
+                <p><strong>Role:</strong> ${data.role}</p>
+                <p><strong>Generated Password:</strong> 
+                    <span id="generatedPassword">${data.password}</span>
+                    <button class="copy-password" onclick="copyPassword()">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </p>
+                <p style="color: #721c24; font-size: 12px; margin-top: 10px;">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Please save this password securely. It cannot be retrieved later.
+                </p>
+            </div>
+        `;
+        
+        modal.style.display = 'block';
+    }
+    
+    async handleChangeUserPassword(userId) {
+        const newPassword = document.getElementById('newUserPassword').value;
+        const confirmPassword = document.getElementById('confirmUserPassword').value;
         
         if (newPassword !== confirmPassword) {
-            this.showMessage('passwordChangeMessage', 'New passwords do not match', 'error');
+            this.showMessage('changeUserPasswordMessage', 'Passwords do not match', 'error');
+            return;
+        }
+        
+        if (newPassword.length < 6) {
+            this.showMessage('changeUserPasswordMessage', 'Password must be at least 6 characters long', 'error');
             return;
         }
         
         try {
-            const response = await fetch(`${this.apiBaseUrl}/admin/change_password`, {
+            const response = await fetch(`${this.apiBaseUrl}/admin/change_user_password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.adminSessionId}`
                 },
                 body: JSON.stringify({
-                    current_password: currentPassword,
+                    user_id: userId,
                     new_password: newPassword
                 })
             });
@@ -240,14 +334,17 @@ class AdminPanel {
             const data = await response.json();
             
             if (response.ok) {
-                this.showMessage('passwordChangeMessage', data.message, 'success');
-                document.getElementById('passwordChangeForm').reset();
+                this.showMessage('changeUserPasswordMessage', data.message, 'success');
+                document.getElementById('changeUserPasswordForm').reset();
+                setTimeout(() => {
+                    this.closeChangePasswordModal();
+                }, 2000);
             } else {
-                this.showMessage('passwordChangeMessage', data.error, 'error');
+                this.showMessage('changeUserPasswordMessage', data.error, 'error');
             }
         } catch (error) {
-            console.error('Failed to change password:', error);
-            this.showMessage('passwordChangeMessage', 'Failed to change password', 'error');
+            console.error('Failed to change user password:', error);
+            this.showMessage('changeUserPasswordMessage', 'Failed to change password', 'error');
         }
     }
     
@@ -317,4 +414,37 @@ class AdminPanel {
 let adminPanel;
 document.addEventListener('DOMContentLoaded', () => {
     adminPanel = new AdminPanel();
-}); 
+});
+
+// Global functions for modals
+function closePasswordModal() {
+    document.getElementById('passwordModal').style.display = 'none';
+}
+
+function closeChangePasswordModal() {
+    if (adminPanel) {
+        adminPanel.closeChangePasswordModal();
+    }
+}
+
+function copyPassword() {
+    const passwordElement = document.getElementById('generatedPassword');
+    if (passwordElement) {
+        const password = passwordElement.textContent;
+        navigator.clipboard.writeText(password).then(() => {
+            // Show a temporary success message
+            const button = passwordElement.nextElementSibling;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            button.style.background = '#28a745';
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.style.background = '#667eea';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy password:', err);
+            alert('Failed to copy password to clipboard');
+        });
+    }
+} 
