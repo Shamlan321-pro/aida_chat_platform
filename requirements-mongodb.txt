@@ -1,0 +1,23 @@
+# Core dependencies
+flask==2.3.3
+flask-cors==4.0.0
+python-dotenv==1.0.0
+
+# MongoDB
+pymongo==4.13.2
+
+# LangChain and AI
+langchain==0.1.0
+langchain-google-genai==0.0.6
+google-generativeai==0.3.2
+
+# ERPNext client
+frappe-client==1.0.0
+
+# HTTP requests
+requests==2.31.0
+
+# Development dependencies
+pytest==7.4.3
+black==23.11.0
+flake8==6.1.0 

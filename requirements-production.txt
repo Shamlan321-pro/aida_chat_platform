@@ -1,0 +1,28 @@
+# Production requirements for Aida Mocxha AI Agent API
+# Install with: pip install -r requirements-production.txt
+
+# Base requirements (from main requirements.txt)
+flask>=2.3.0
+flask-cors>=4.0.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+google-generativeai>=0.3.0
+frappeclient>=0.0.7
+pymongo>=4.5.0
+
+# Production WSGI servers (choose one or more)
+gunicorn>=21.2.0          # Recommended for Linux/Unix
+waitress>=2.1.2           # Good for Windows
+uwsgi>=2.0.21             # Alternative WSGI server
+
+# Production monitoring and logging
+psutil>=5.9.0             # System monitoring
+setproctitle>=1.3.2       # Process naming for Gunicorn
+
+# Security enhancements
+cryptography>=41.0.0      # For secure sessions
+
+# Optional: Database drivers for production databases
+# psycopg2-binary>=2.9.0  # PostgreSQL
+# mysql-connector-python>=8.1.0  # MySQL
+# redis>=4.6.0            # Redis for caching
