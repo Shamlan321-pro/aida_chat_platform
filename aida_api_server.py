@@ -1317,6 +1317,8 @@ def test_config_page():
     """Serve the test configuration page"""
     return send_from_directory('web_ui', 'test_config.html')
 
+
+
 @app.route('/config.js')
 def serve_config_js():
     """Serve the configuration JavaScript file"""

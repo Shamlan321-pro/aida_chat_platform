@@ -1,7 +1,7 @@
 class LoginManager {
     constructor() {
         this.apiBaseUrl = window.AIDA_CONFIG?.apiBaseUrl || 'http://localhost:5000';
-        this.initializeEventListeners();
+        this.init();
     }
     
     init() {
