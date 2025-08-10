@@ -1,8 +1,8 @@
 class AdminPanel {
     constructor() {
-        this.apiBaseUrl = 'http://localhost:5000';
+        this.apiBaseUrl = window.AIDA_CONFIG?.apiBaseUrl || 'http://localhost:5000';
         this.adminSessionId = localStorage.getItem('aida-admin-session');
-        this.init();
+        this.initializeEventListeners();
     }
     
     async init() {

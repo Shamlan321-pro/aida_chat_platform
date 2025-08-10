@@ -1,7 +1,8 @@
 class AdminLogin {
     constructor() {
-        this.apiBaseUrl = 'http://localhost:5000';
-        this.init();
+        this.apiBaseUrl = window.AIDA_CONFIG?.apiBaseUrl || 'http://localhost:5000';
+        this.adminSessionId = localStorage.getItem('aida-admin-session');
+        this.initializeEventListeners();
     }
     
     init() {

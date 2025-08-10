@@ -3,7 +3,7 @@ class AidaWebUI {
     constructor() {
         this.sessionId = null;
         this.isConnected = false;
-        this.apiBaseUrl = 'http://localhost:5000';
+        this.apiBaseUrl = window.AIDA_CONFIG?.apiBaseUrl || 'http://localhost:5000';
         this.currentTheme = localStorage.getItem('aida-theme') || 'light';
         this.currentChatId = null;
         this.recentChats = [];

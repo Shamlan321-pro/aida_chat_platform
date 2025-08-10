@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIDA Platform - Configuration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+        .info { border-color: #17a2b8; background: #d1ecf1; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-robot"></i> AIDA Platform Configuration Test</h1>
+        
+        <div class="test-section info">
+            <h3>Current Environment</h3>
+            <p><strong>Protocol:</strong> <span id="protocol"></span></p>
+            <p><strong>Host:</strong> <span id="host"></span></p>
+            <p><strong>Full URL:</strong> <span id="fullUrl"></span></p>
+        </div>
+        
+        <div class="test-section info">
+            <h3>Configuration Status</h3>
+            <p><strong>Config Loaded:</strong> <span id="configLoaded"></span></p>
+            <p><strong>API Base URL:</strong> <span id="apiBaseUrl"></span></p>
+            <p><strong>Fallback Used:</strong> <span id="fallbackUsed"></span></p>
+        </div>
+        
+        <div class="test-section">
+            <h3>API Connection Test</h3>
+            <button onclick="testApiConnection()">Test API Connection</button>
+            <div id="apiTestResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>Configuration Override Test</h3>
+            <p>Test overriding the configuration:</p>
+            <input type="text" id="overrideUrl" placeholder="https://example.com" style="width: 300px; padding: 5px;">
+            <button onclick="overrideConfig()">Override Config</button>
+            <button onclick="resetConfig()">Reset to Auto</button>
+            <div id="overrideResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>All Configuration Values</h3>
+            <button onclick="showAllConfig()">Show Full Config</button>
+            <div id="allConfigResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // Display current environment info
+        document.getElementById('protocol').textContent = window.location.protocol;
+        document.getElementById('host').textContent = window.location.host;
+        document.getElementById('fullUrl').textContent = window.location.href;
+        
+        // Check configuration status
+        if (window.AIDA_CONFIG) {
+            document.getElementById('configLoaded').textContent = '✅ Yes';
+            document.getElementById('apiBaseUrl').textContent = window.AIDA_CONFIG.apiBaseUrl;
+            
+            // Check if fallback is being used
+            const isFallback = window.AIDA_CONFIG.apiBaseUrl === 'http://localhost:5000';
+            document.getElementById('fallbackUsed').textContent = isFallback ? '⚠️ Yes (localhost fallback)' : '❌ No';
+            
+            if (isFallback) {
+                document.getElementById('fallbackUsed').parentElement.parentElement.className = 'test-section error';
+            } else {
+                document.getElementById('fallbackUsed').parentElement.parentElement.className = 'test-section success';
+            }
+        } else {
+            document.getElementById('configLoaded').textContent = '❌ No';
+            document.getElementById('apiBaseUrl').textContent = 'N/A';
+            document.getElementById('fallbackUsed').textContent = 'N/A';
+            document.getElementById('configLoaded').parentElement.parentElement.className = 'test-section error';
+        }
+        
+        async function testApiConnection() {
+            const resultDiv = document.getElementById('apiTestResult');
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch(`${window.AIDA_CONFIG.apiBaseUrl}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Connection successful!<br>
+                            Status: ${data.status}<br>
+                            MongoDB: ${data.mongodb_available ? 'Available' : 'Not Available'}<br>
+                            Active Sessions: ${data.active_sessions}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Connection failed: ${response.status} ${response.statusText}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Connection error: ${error.message}</div>`;
+            }
+        }
+        
+        function overrideConfig() {
+            const overrideUrl = document.getElementById('overrideUrl').value.trim();
+            if (!overrideUrl) {
+                alert('Please enter a URL');
+                return;
+            }
+            
+            // Override the configuration
+            window.AIDA_CONFIG.apiBaseUrl = overrideUrl;
+            
+            const resultDiv = document.getElementById('overrideResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="info">
+                    ✅ Configuration overridden!<br>
+                    New API Base URL: ${overrideUrl}<br>
+                    <small>This change is temporary and will reset on page reload</small>
+                </div>
+            `;
+            
+            // Update the display
+            document.getElementById('apiBaseUrl').textContent = overrideUrl;
+            document.getElementById('fallbackUsed').textContent = '❌ No (overridden)';
+        }
+        
+        function resetConfig() {
+            // Reset to automatic detection
+            window.AIDA_CONFIG.apiBaseUrl = window.location.protocol + '//' + window.location.host;
+            
+            const resultDiv = document.getElementById('overrideResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="info">
+                    ✅ Configuration reset to automatic detection!<br>
+                    API Base URL: ${window.AIDA_CONFIG.apiBaseUrl}
+                </div>
+            `;
+            
+            // Update the display
+            document.getElementById('apiBaseUrl').textContent = window.AIDA_CONFIG.apiBaseUrl;
+            document.getElementById('fallbackUsed').textContent = '❌ No';
+        }
+        
+        function showAllConfig() {
+            const resultDiv = document.getElementById('allConfigResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="info">
+                    <strong>Full Configuration:</strong><br>
+                    <pre>${JSON.stringify(window.AIDA_CONFIG, null, 2)}</pre>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html> 

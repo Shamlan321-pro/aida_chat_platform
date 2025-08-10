@@ -1312,6 +1312,16 @@ def serve_login_js():
     """Serve login JavaScript"""
     return send_from_directory('web_ui', 'login.js')
 
+@app.route('/test_config')
+def test_config_page():
+    """Serve the test configuration page"""
+    return send_from_directory('web_ui', 'test_config.html')
+
+@app.route('/config.js')
+def serve_config_js():
+    """Serve the configuration JavaScript file"""
+    return send_from_directory('web_ui', 'config.js')
+
 @app.route('/')
 def index():
     """Serve the main web UI"""
